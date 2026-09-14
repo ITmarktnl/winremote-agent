@@ -48,6 +48,19 @@ bestandsnaam: `Windowshulp-<bedrijf>.exe`.
 - De klant ziet in het venster wanneer een technicus verbonden is en beëindigt de sessie zelf.
 - Het programma draait als de ingelogde gebruiker, zonder beheerdersrechten, en installeert niets.
 
+## Downloaden
+
+Windows-builds worden gemaakt door GitHub Actions en zijn te vinden onder
+[Releases](https://github.com/ITmarktnl/windowshulp-agent/releases) en bij elke
+[build](https://github.com/ITmarktnl/windowshulp-agent/actions). De klant start de agent in de praktijk via
+de supportpagina van het betreffende IT-bedrijf op [windowshulp.nl](https://windowshulp.nl).
+
+Code signing van de Windows-builds wordt gratis verzorgd door de
+[SignPath Foundation](https://signpath.org/), met een certificaat van SignPath.
+
+*Free code signing for the Windows builds is provided by the [SignPath Foundation](https://signpath.org/),
+using a certificate by SignPath.*
+
 ## Licentie
 
 [GNU Affero General Public License v3.0](LICENSE). Aanpassingen die je verspreidt of via een netwerk aanbiedt,
