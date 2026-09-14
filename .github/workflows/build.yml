@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Publish
+        run: dotnet publish -c Release --no-restore
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windowshulp-unsigned
+          path: bin/Release/net10.0-windows/win-x64/publish/Windowshulp.exe
+          if-no-files-found: error
+
+      # Code signing via SignPath Foundation volgt hier zodra het project is goedgekeurd:
+      # https://about.signpath.io/product/open-source
