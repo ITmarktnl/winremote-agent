@@ -17,9 +17,10 @@ public sealed class Sessie : IAsyncDisposable
 	private const uint RtpDuur = 90000 / Fps;
 
 	private readonly Signalering _sig;
-	private readonly SchermOpname _opname = new(maxBreedte: 1600);
+	private readonly SchermOpname _opname = new(maxBreedte: 1920);
 	private RTCPeerConnection? _pc;
 	private RTCDataChannel? _dc;
+	private RTCDataChannel? _dcMuis;
 	private VpxVideoEncoder? _enc;
 	private CancellationTokenSource? _streamCts;
 	private readonly object _slot = new();
@@ -105,7 +106,7 @@ public sealed class Sessie : IAsyncDisposable
 
 		var pc = new RTCPeerConnection(config);
 		_pc = pc;
-		_enc = new VpxVideoEncoder { TargetKbps = 2500 };
+		_enc = new VpxVideoEncoder { TargetKbps = 8000 };
 
 		var track = new MediaStreamTrack(new VideoFormat(VideoCodecsEnum.VP8, 96), MediaStreamStatusEnum.SendOnly);
 		pc.addTrack(track);
@@ -139,10 +140,7 @@ public sealed class Sessie : IAsyncDisposable
 			}
 		};
 
-		var dc = await pc.createDataChannel("invoer", null);
-		_dc = dc;
-		dc.onopen += () => dc.send(JsonNode.Parse($$"""{"t":"info","w":{{_opname.Breedte}},"h":{{_opname.Hoogte}}}""")!.ToJsonString());
-		dc.onmessage += (_, _, data) =>
+		void OntvangInvoer(byte[] data)
 		{
 			try
 			{
@@ -150,7 +148,19 @@ public sealed class Sessie : IAsyncDisposable
 				if (bericht is not null) Invoer.Verwerk(bericht, _opname.Scherm);
 			}
 			catch { /* ongeldig bericht */ }
-		};
+		}
+
+		// Betrouwbaar, geordend kanaal voor klikken en toetsen (mogen niet verloren gaan).
+		var dc = await pc.createDataChannel("invoer", null);
+		_dc = dc;
+		dc.onopen += () => dc.send(JsonNode.Parse($$"""{"t":"info","w":{{_opname.Breedte}},"h":{{_opname.Hoogte}}}""")!.ToJsonString());
+		dc.onmessage += (_, _, data) => OntvangInvoer(data);
+
+		// Snel kanaal voor muisbewegingen en scrollen: onbetrouwbaar en ongeordend, zodat verouderde
+		// bewegingen worden weggegooid in plaats van opgestapeld. Dat houdt de muis direct responsief.
+		var dcMuis = await pc.createDataChannel("muis", new RTCDataChannelInit { ordered = false, maxRetransmits = 0 });
+		_dcMuis = dcMuis;
+		dcMuis.onmessage += (_, _, data) => OntvangInvoer(data);
 
 		var offer = pc.createOffer(null);
 		await pc.setLocalDescription(offer);
@@ -209,6 +219,7 @@ public sealed class Sessie : IAsyncDisposable
 		var pc = _pc;
 		_pc = null;
 		_dc = null;
+		_dcMuis = null;
 		try { pc?.close(); } catch { /* al gesloten */ }
 		_enc?.Dispose();
 		_enc = null;
