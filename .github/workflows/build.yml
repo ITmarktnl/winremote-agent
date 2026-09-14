@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   build:
@@ -26,12 +27,32 @@ jobs:
       - name: Publish
         run: dotnet publish -c Release --no-restore
 
-      - name: Upload artifact
+      - name: Upload build (ongesigneerd)
+        id: artefact
         uses: actions/upload-artifact@v4
         with:
           name: Windowshulp-unsigned
           path: bin/Release/net10.0-windows/win-x64/publish/Windowshulp.exe
           if-no-files-found: error
 
-      # Code signing via SignPath Foundation volgt hier zodra het project is goedgekeurd:
-      # https://about.signpath.io/product/open-source
+      # Ondertekenen via SignPath Foundation (gratis voor open source).
+      # Actief zodra de repository-variabele SIGNPATH_ORG_ID is ingesteld na goedkeuring.
+      - name: Onderteken via SignPath
+        if: ${{ vars.SIGNPATH_ORG_ID != '' }}
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+          project-slug: windowshulp-agent
+          signing-policy-slug: ${{ github.ref_type == 'tag' && 'release-signing' || 'test-signing' }}
+          github-artifact-id: ${{ steps.artefact.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+
+      - name: Upload build (gesigneerd)
+        if: ${{ vars.SIGNPATH_ORG_ID != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windowshulp-signed
+          path: signed/Windowshulp.exe
+          if-no-files-found: error
