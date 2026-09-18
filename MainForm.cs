@@ -10,6 +10,7 @@ public sealed class MainForm : Form
 {
 	private readonly Branding _merk = Branding.UitBestandsnaam();
 	private readonly Signalering _sig = new();
+	private readonly Startopdracht _start;
 	private Sessie? _sessie;
 	private readonly CancellationTokenSource _cts = new();
 
@@ -23,8 +24,9 @@ public sealed class MainForm : Form
 	private readonly Panel _balk = new();
 	private readonly Panel _stip = new();
 
-	public MainForm()
+	public MainForm(Startopdracht start)
 	{
+		_start = start;
 		Text = $"{_merk.Naam} – Hulp op afstand";
 		StartPosition = FormStartPosition.CenterScreen;
 		FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -130,7 +132,24 @@ public sealed class MainForm : Form
 	{
 		try
 		{
-			var code = await _sig.NieuweSessieAsync(_cts.Token);
+			string code;
+			if (_start.Code is not null)
+			{
+				// De klant ziet deze code al op windowshulp.nl; hier alleen aansluiten.
+				if (!await _sig.GebruikCodeAsync(_start.Code, _cts.Token))
+				{
+					_code.Text = "· · · · · ·";
+					_status.Text = "Deze code is verlopen. Ga terug naar windowshulp.nl en klik opnieuw op Sessie starten.";
+					_stip.BackColor = Color.FromArgb(200, 16, 46);
+					_stip.Invalidate();
+					return;
+				}
+				code = _start.Code;
+			}
+			else
+			{
+				code = await _sig.NieuweSessieAsync(_cts.Token);
+			}
 			_code.Text = $"{code[..3]} {code[3..]}";
 			_kopieer.Enabled = true;
 
@@ -149,7 +168,9 @@ public sealed class MainForm : Form
 			});
 
 			await _sig.VerbindAsync(_cts.Token);
-			_status.Text = "Klaar. Wachten tot de technicus de code invoert…";
+			_status.Text = _start.Code is not null
+				? "Klaar. Geef de code door aan uw technicus en wacht tot die verbindt…"
+				: "Klaar. Wachten tot de technicus de code invoert…";
 		}
 		catch (Exception ex)
 		{

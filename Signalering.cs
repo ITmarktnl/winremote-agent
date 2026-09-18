@@ -33,6 +33,20 @@ public sealed class Signalering : IAsyncDisposable
 		return Code;
 	}
 
+	/// <summary>
+	/// Sluit aan op een code die al bestaat (aangemaakt door de website). Geeft false als de code
+	/// onbekend of verlopen is.
+	/// </summary>
+	public async Task<bool> GebruikCodeAsync(string code, CancellationToken ct)
+	{
+		using var r = await Http.GetAsync($"{Branding.SignaalBasis}/sessie/{code}", ct);
+		if (!r.IsSuccessStatusCode) return false;
+		var d = await r.Content.ReadFromJsonAsync<JsonNode>(ct);
+		if (d?["bestaat"]?.GetValue<bool>() != true) return false;
+		Code = code;
+		return true;
+	}
+
 	public async Task<List<IceServer>> IceServersAsync(CancellationToken ct)
 	{
 		var d = await Http.GetFromJsonAsync<JsonNode>($"{Branding.SignaalBasis}/ice", ct);

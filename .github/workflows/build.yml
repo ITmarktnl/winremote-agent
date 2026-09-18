@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -21,23 +21,30 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Versie uit het projectbestand
+        id: versie
+        shell: pwsh
+        run: |
+          $v = ([xml](Get-Content WindowshulpAgent.csproj)).Project.PropertyGroup.Version
+          "versie=$v" >> $env:GITHUB_OUTPUT
+
       - name: Restore
         run: dotnet restore
 
       - name: Publish
         run: dotnet publish -c Release --no-restore
 
-      - name: Upload build (ongesigneerd)
-        id: artefact
+      - name: Upload exe (ongesigneerd)
+        id: exe
         uses: actions/upload-artifact@v4
         with:
-          name: Windowshulp-unsigned
+          name: Windowshulp-exe-unsigned
           path: bin/Release/net10.0-windows/win-x64/publish/Windowshulp.exe
           if-no-files-found: error
 
       # Ondertekenen via SignPath Foundation (gratis voor open source).
       # Actief zodra de repository-variabele SIGNPATH_ORG_ID is ingesteld na goedkeuring.
-      - name: Onderteken via SignPath
+      - name: Onderteken exe via SignPath
         if: ${{ vars.SIGNPATH_ORG_ID != '' }}
         uses: signpath/github-action-submit-signing-request@v1
         with:
@@ -45,14 +52,62 @@ jobs:
           organization-id: ${{ vars.SIGNPATH_ORG_ID }}
           project-slug: windowshulp-agent
           signing-policy-slug: ${{ github.ref_type == 'tag' && 'release-signing' || 'test-signing' }}
-          github-artifact-id: ${{ steps.artefact.outputs.artifact-id }}
+          github-artifact-id: ${{ steps.exe.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: signed
 
-      - name: Upload build (gesigneerd)
+      - name: Gesigneerde exe in de installer opnemen
+        if: ${{ vars.SIGNPATH_ORG_ID != '' }}
+        shell: pwsh
+        run: Copy-Item signed/Windowshulp.exe bin/Release/net10.0-windows/win-x64/publish/Windowshulp.exe -Force
+
+      - name: WiX installeren
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: MSI bouwen
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          wix build installer/Windowshulp.wxs -arch x64 `
+            -d Publish=bin/Release/net10.0-windows/win-x64/publish `
+            -d Versie=${{ steps.versie.outputs.versie }} `
+            -o out/Windowshulp.msi
+
+      - name: Upload MSI (ongesigneerd)
+        id: msi
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windowshulp-msi-unsigned
+          path: out/Windowshulp.msi
+          if-no-files-found: error
+
+      - name: Onderteken MSI via SignPath
+        if: ${{ vars.SIGNPATH_ORG_ID != '' }}
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+          project-slug: windowshulp-agent
+          signing-policy-slug: ${{ github.ref_type == 'tag' && 'release-signing' || 'test-signing' }}
+          github-artifact-id: ${{ steps.msi.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed-msi
+
+      - name: Upload gesigneerde bestanden
         if: ${{ vars.SIGNPATH_ORG_ID != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: Windowshulp-signed
-          path: signed/Windowshulp.exe
+          path: |
+            signed/Windowshulp.exe
+            signed-msi/Windowshulp.msi
           if-no-files-found: error
+
+      - name: Release publiceren
+        if: ${{ github.ref_type == 'tag' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/Windowshulp.msi
+            bin/Release/net10.0-windows/win-x64/publish/Windowshulp.exe
+          generate_release_notes: true

@@ -1,59 +1,76 @@
 # Windowshulp Agent
 
-Open-source Windows-client voor hulp op afstand, onderdeel van [Windowshulp.nl](https://windowshulp.nl): een
-white-label supporttool voor IT-bedrijven. De klant start dit programma, ziet een zescijferige sessiecode en
-geeft die door aan de technicus. De technicus werkt vanuit de browser en ziet het scherm van de klant en kan
-muis en toetsenbord bedienen.
+Open-source Windows-client voor hulp op afstand, onderdeel van [Windowshulp.nl](https://windowshulp.nl): de
+Nederlandse tool om een Windows-pc op afstand te bekijken en te bedienen. De klant installeert Windowshulp één
+keer, start daarna vanaf windowshulp.nl met één klik een sessie en geeft de zescijferige code door. De technicus
+werkt vanuit de browser en ziet het scherm van de klant en kan muis en toetsenbord bedienen.
 
-*Open-source Windows remote-support agent for [Windowshulp.nl](https://windowshulp.nl), a white-label support
-tool for IT companies. The customer runs this program, reads a six-digit session code to the technician, and the
-technician views and controls the screen from the browser.*
+*Open-source Windows remote-support agent for [Windowshulp.nl](https://windowshulp.nl). The customer installs
+Windowshulp once, starts a session from the website with a single click and reads a six-digit code to the
+technician, who views and controls the screen from the browser.*
 
 ## Hoe het werkt
 
-1. De agent vraagt een sessiecode aan bij `signaal.windowshulp.nl` en opent daar een WebSocket.
-2. Zodra een technicus dezelfde code invoert, maakt de agent een WebRTC-aanbod (SIPSorcery).
-3. Het scherm gaat als VP8-video peer-to-peer naar de browser van de technicus, via TURN als dat nodig is.
-4. Muis- en toetsenbordacties komen terug over het datakanaal `invoer` en worden met `SendInput` uitgevoerd.
-5. De klant sluit het venster en de verbinding is weg. Er wordt niets geïnstalleerd en niets achtergelaten.
+1. De klant klikt op [windowshulp.nl/hulp](https://windowshulp.nl/hulp) op **Sessie starten**. De website vraagt een
+   sessiecode aan bij `signaal.windowshulp.nl` en opent `windowshulp://join/<code>`.
+2. Windows start de geïnstalleerde agent met die code (URL-protocol, geregistreerd door de installer). De agent
+   vraagt eerst bevestiging en sluit dan aan op de sessie via een WebSocket.
+3. Zodra de technicus dezelfde code invoert, maakt de agent een WebRTC-aanbod (SIPSorcery).
+4. Het scherm gaat als VP8-video peer-to-peer naar de browser van de technicus, via TURN als dat nodig is.
+5. Muis- en toetsenbordacties komen terug over de datakanalen `invoer` (betrouwbaar) en `muis` (snel) en worden
+   met `SendInput` uitgevoerd.
+6. De klant sluit het venster en de verbinding is weg. Tussen sessies draait er niets op de achtergrond.
 
 De signaleringsserver stuurt alleen kleine berichten door (SDP en ICE); beeld en invoer lopen nooit via de server.
 
+Zonder argumenten vraagt de agent zelf een nieuwe code aan en toont die in het venster. Met `--code 482917`
+sluit hij aan op een bestaande code.
+
 ## Bouwen
 
-Vereist de [.NET 10 SDK](https://dotnet.microsoft.com/). Bouwen kan op Windows, macOS en Linux:
+Vereist de [.NET 10 SDK](https://dotnet.microsoft.com/). De agent bouwt op Windows, macOS en Linux:
 
 ```sh
 dotnet publish -c Release
 # → bin/Release/net10.0-windows/win-x64/publish/Windowshulp.exe
 ```
 
-Het resultaat is één zelfstandige `.exe` zonder installatie. De huisstijl van het IT-bedrijf wordt afgeleid uit de
-bestandsnaam: `Windowshulp-<bedrijf>.exe`.
+De installer (`Windowshulp.msi`, per gebruiker, geen beheerdersrechten) wordt gebouwd met
+[WiX 5](https://wixtoolset.org/) en kan alleen op Windows gemaakt worden:
+
+```sh
+dotnet tool install --global wix --version 5.0.2
+wix build installer/Windowshulp.wxs -arch x64 -d Publish=bin/Release/net10.0-windows/win-x64/publish -d Versie=0.2.0 -o Windowshulp.msi
+```
+
+GitHub Actions doet dit bij elke push; zie [Actions](https://github.com/ITmarktnl/windowshulp-agent/actions).
 
 ## Structuur
 
 | Bestand | Rol |
 | --- | --- |
-| `Program.cs`, `MainForm.cs` | Venster met huisstijl, sessiecode en status |
+| `Program.cs` | Start, startargumenten (`windowshulp://join/…`, `--code`) en bevestiging |
+| `MainForm.cs` | Venster met sessiecode en status |
 | `Signalering.cs` | HTTP + WebSocket naar de signaleringsserver |
-| `Sessie.cs` | WebRTC-verbinding, videostream en datakanaal |
+| `Sessie.cs` | WebRTC-verbinding, videostream en datakanalen |
 | `SchermOpname.cs` | Schermopname met muiscursor (GDI) |
 | `Invoer.cs` | Muis en toetsenbord via `SendInput` |
-| `Branding.cs` | Naam, kleur en tenant-slug |
+| `Branding.cs` | Naam en kleur |
+| `installer/Windowshulp.wxs` | WiX-definitie van de MSI en het URL-protocol |
 
 ## Privacy en veiligheid
 
 - Verbinden kan alleen met de actuele sessiecode die de klant zelf doorgeeft.
+- Gestart via een link vraagt de agent eerst om bevestiging voordat er een sessie begint.
 - De klant ziet in het venster wanneer een technicus verbonden is en beëindigt de sessie zelf.
-- Het programma draait als de ingelogde gebruiker, zonder beheerdersrechten, en installeert niets.
+- Het programma draait als de ingelogde gebruiker, zonder beheerdersrechten, en draait niet op de achtergrond.
 
 ## Downloaden
 
 Windows-builds worden gemaakt door GitHub Actions en zijn te vinden onder
 [Releases](https://github.com/ITmarktnl/windowshulp-agent/releases) en bij elke
-[build](https://github.com/ITmarktnl/windowshulp-agent/actions). De klant start de agent in de praktijk via
-de supportpagina van het betreffende IT-bedrijf op [windowshulp.nl](https://windowshulp.nl).
+[build](https://github.com/ITmarktnl/windowshulp-agent/actions). Klanten downloaden de installer via
+[windowshulp.nl/hulp](https://windowshulp.nl/hulp).
 
 Code signing van de Windows-builds wordt gratis verzorgd door de
 [SignPath Foundation](https://signpath.org/), met een certificaat van SignPath.
@@ -66,4 +83,4 @@ using a certificate by SignPath.*
 [GNU Affero General Public License v3.0](LICENSE). Aanpassingen die je verspreidt of via een netwerk aanbiedt,
 moet je onder dezelfde licentie openbaar maken.
 
-De website, de signaleringsserver en het tenantbeheer van Windowshulp.nl maken geen deel uit van dit project.
+De website en de signaleringsserver van Windowshulp.nl maken geen deel uit van dit project.

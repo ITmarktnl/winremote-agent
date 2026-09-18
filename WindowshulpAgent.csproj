@@ -20,9 +20,9 @@
     <RootNamespace>Windowshulp.Agent</RootNamespace>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Company>Windowshulp.nl</Company>
-    <Product>Windowshulp Support</Product>
+    <Product>Windowshulp</Product>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,8 +6,8 @@ namespace Windowshulp.Agent;
 /// <summary>
 /// Zet invoerberichten van de technicus om in echte muis- en toetsenbordacties via SendInput.
 /// Berichten (JSON over het datakanaal "invoer"):
-///   { "t":"mm", "x":0.42, "y":0.17 }          muis bewegen, genormaliseerd 0..1 over het scherm
-///   { "t":"md"|"mu", "b":0|1|2 }               muisknop in/uit (links, midden, rechts)
+///   { "t":"mm", "x":0.42, "y":0.17, "s":123 }  muis bewegen, genormaliseerd 0..1 over het scherm, s = volgnummer
+///   { "t":"md"|"mu", "b":0|1|2, "x":…, "y":… } muisknop in/uit (links, midden, rechts), met de positie van de klik
 ///   { "t":"wh", "dx":0, "dy":-120 }            scrollen
 ///   { "t":"kd"|"ku", "code":"KeyA", "key":"a" } toets in/uit (DOM KeyboardEvent.code / .key)
 /// </summary>
@@ -21,10 +21,12 @@ public static class Invoer
 				MuisNaar(bericht["x"]!.GetValue<double>(), bericht["y"]!.GetValue<double>(), scherm);
 				break;
 			case "md":
-				MuisKnop(bericht["b"]?.GetValue<int>() ?? 0, true);
-				break;
 			case "mu":
-				MuisKnop(bericht["b"]?.GetValue<int>() ?? 0, false);
+				// Eerst naar de klikpositie, dan pas klikken: zo landt een klik altijd waar de technicus hem zag,
+				// ook als de laatste beweging over het snelle kanaal verloren ging.
+				if (bericht["x"] is JsonNode kx && bericht["y"] is JsonNode ky)
+					MuisNaar(kx.GetValue<double>(), ky.GetValue<double>(), scherm);
+				MuisKnop(bericht["b"]?.GetValue<int>() ?? 0, bericht["t"]!.GetValue<string>() == "md");
 				break;
 			case "wh":
 				Scroll(bericht["dx"]?.GetValue<double>() ?? 0, bericht["dy"]?.GetValue<double>() ?? 0);

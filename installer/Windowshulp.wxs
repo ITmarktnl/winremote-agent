@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Windowshulp.msi – installeert de agent per gebruiker (geen beheerdersrechten) in
+  %LocalAppData%\Programs\Windowshulp en registreert het URL-protocol windowshulp://, zodat
+  de klant vanaf windowshulp.nl met één klik een sessie start.
+
+  Bouwen (WiX v5):  wix build installer/Windowshulp.wxs -arch x64 -d Publish=<map met Windowshulp.exe> -o Windowshulp.msi
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Windowshulp"
+           Manufacturer="Windowshulp.nl"
+           Version="$(var.Versie)"
+           UpgradeCode="7d2e0a4c-5b31-4c6e-9f0e-2a8b6f3c1d90"
+           Language="1043"
+           Codepage="1252"
+           Scope="perUser"
+           Compressed="yes">
+
+    <SummaryInformation Description="Windowshulp – hulp op afstand" Manufacturer="Windowshulp.nl" />
+
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="Er is al een nieuwere versie van Windowshulp geïnstalleerd." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Property Id="ARPURLINFOABOUT" Value="https://windowshulp.nl" />
+    <Property Id="ARPHELPLINK" Value="https://windowshulp.nl/hulp" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Windowshulp" />
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="Hoofd" Title="Windowshulp" Level="1">
+      <ComponentGroupRef Id="Bestanden" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="Bestanden" Directory="INSTALLFOLDER">
+
+      <!-- Het programma zelf. Bij een per-gebruiker-installatie is een HKCU-waarde het sleutelpad. -->
+      <Component Id="Programma" Guid="3f9a7c1e-0d2b-4e88-a6c4-91b5e2d7f013">
+        <File Id="WindowshulpExe" Source="$(var.Publish)\Windowshulp.exe" />
+        <RegistryValue Root="HKCU" Key="Software\Windowshulp" Name="Pad" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+      </Component>
+
+      <!-- URL-protocol: windowshulp://join/482917 start het programma en sluit aan op die sessiecode. -->
+      <Component Id="Protocol" Guid="a1c4e9b2-6f7d-4a3e-8c10-5e2b9d4f7a61">
+        <RegistryKey Root="HKCU" Key="Software\Classes\windowshulp" ForceDeleteOnUninstall="yes">
+          <RegistryValue Type="string" Value="URL:Windowshulp hulp op afstand" KeyPath="yes" />
+          <RegistryValue Name="URL Protocol" Type="string" Value="" />
+          <RegistryValue Key="DefaultIcon" Type="string" Value="&quot;[INSTALLFOLDER]Windowshulp.exe&quot;,0" />
+          <RegistryValue Key="shell\open\command" Type="string" Value="&quot;[INSTALLFOLDER]Windowshulp.exe&quot; &quot;%1&quot;" />
+        </RegistryKey>
+      </Component>
+
+      <!-- Snelkoppeling in het startmenu, zodat de klant het programma ook los kan starten. -->
+      <Component Id="Snelkoppeling" Guid="c8d3b5f0-2e41-4b9a-97d6-0f4a1c6e8b25">
+        <Shortcut Id="StartMenuSnelkoppeling"
+                  Directory="ProgramMenuFolder"
+                  Name="Windowshulp"
+                  Description="Hulp op afstand"
+                  Target="[INSTALLFOLDER]Windowshulp.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU" Key="Software\Windowshulp" Name="Snelkoppeling" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+</Wix>

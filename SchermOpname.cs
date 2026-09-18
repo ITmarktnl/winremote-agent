@@ -16,6 +16,7 @@ public sealed class SchermOpname : IDisposable
 	private Bitmap? _klein;
 	private Graphics? _gVol;
 	private Graphics? _gKlein;
+	private byte[]? _buffer;
 
 	public Rectangle Scherm { get; private set; }
 	public int Breedte { get; private set; }
@@ -50,7 +51,7 @@ public sealed class SchermOpname : IDisposable
 		var data = bron.LockBits(new Rectangle(0, 0, Breedte, Hoogte), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 		try
 		{
-			var bytes = new byte[Breedte * Hoogte * 4];
+			var bytes = _buffer ??= new byte[Breedte * Hoogte * 4];
 			var rij = Breedte * 4;
 			for (var y = 0; y < Hoogte; y++)
 				Marshal.Copy(data.Scan0 + y * data.Stride, bytes, y * rij, rij);

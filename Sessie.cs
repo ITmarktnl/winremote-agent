@@ -15,9 +15,14 @@ public sealed class Sessie : IAsyncDisposable
 {
 	private const int Fps = 15;
 	private const uint RtpDuur = 90000 / Fps;
+	// 1440 px breed en ~3,5 Mbit/s: scherp genoeg om te werken, maar licht genoeg voor een gewone
+	// klant-pc en een thuisverbinding. Hogere waarden gaven haperingen door pakketverlies.
+	private const int MaxBreedte = 1440;
+	private const int DoelKbps = 3500;
 
 	private readonly Signalering _sig;
-	private readonly SchermOpname _opname = new(maxBreedte: 1920);
+	private readonly SchermOpname _opname = new(maxBreedte: MaxBreedte);
+	private long _laatsteMuisVolgnummer = -1;
 	private RTCPeerConnection? _pc;
 	private RTCDataChannel? _dc;
 	private RTCDataChannel? _dcMuis;
@@ -106,7 +111,8 @@ public sealed class Sessie : IAsyncDisposable
 
 		var pc = new RTCPeerConnection(config);
 		_pc = pc;
-		_enc = new VpxVideoEncoder { TargetKbps = 8000 };
+		_enc = new VpxVideoEncoder { TargetKbps = DoelKbps };
+		_laatsteMuisVolgnummer = -1;
 
 		var track = new MediaStreamTrack(new VideoFormat(VideoCodecsEnum.VP8, 96), MediaStreamStatusEnum.SendOnly);
 		pc.addTrack(track);
@@ -145,7 +151,16 @@ public sealed class Sessie : IAsyncDisposable
 			try
 			{
 				var bericht = JsonNode.Parse(Encoding.UTF8.GetString(data));
-				if (bericht is not null) Invoer.Verwerk(bericht, _opname.Scherm);
+				if (bericht is null) return;
+				// Het muiskanaal is ongeordend: een oudere beweging die ná een nieuwere aankomt, negeren we.
+				// Anders springt de muis heen en weer.
+				if (bericht["t"]?.GetValue<string>() == "mm" && bericht["s"] is JsonNode volg)
+				{
+					var nr = volg.GetValue<long>();
+					if (nr <= _laatsteMuisVolgnummer) return;
+					_laatsteMuisVolgnummer = nr;
+				}
+				Invoer.Verwerk(bericht, _opname.Scherm);
 			}
 			catch { /* ongeldig bericht */ }
 		}
@@ -184,8 +199,8 @@ public sealed class Sessie : IAsyncDisposable
 				try
 				{
 					var bgra = _opname.Frame();
-					// Elke 3 seconden een keyframe, zodat een technicus die frames mist snel weer beeld heeft.
-					if (++teller % (Fps * 3) == 0) enc.ForceKeyFrame();
+					// Elke 2 seconden een keyframe: bij pakketverlies is het beeld zo snel weer heel.
+					if (++teller % (Fps * 2) == 0) enc.ForceKeyFrame();
 					var gecodeerd = enc.EncodeVideo(_opname.Breedte, _opname.Hoogte, bgra, VideoPixelFormatsEnum.Bgra, VideoCodecsEnum.VP8);
 					if (gecodeerd is { Length: > 0 }) pc.SendVideo(RtpDuur, gecodeerd);
 				}
