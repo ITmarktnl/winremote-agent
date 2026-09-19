@@ -61,6 +61,24 @@ jobs:
         shell: pwsh
         run: Copy-Item signed/Windowshulp.exe bin/Release/net10.0-windows/win-x64/publish/Windowshulp.exe -Force
 
+      # Azure Trusted Signing: actief zodra de secrets AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
+      # en de variabelen SIGNING_ENDPOINT, SIGNING_ACCOUNT, SIGNING_PROFILE zijn ingesteld.
+      - name: Onderteken exe (Azure Trusted Signing)
+        if: ${{ vars.SIGNING_ACCOUNT != '' }}
+        uses: azure/trusted-signing-action@v0.5.1
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ vars.SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ vars.SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.SIGNING_PROFILE }}
+          files-folder: bin/Release/net10.0-windows/win-x64/publish
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
       - name: WiX installeren
         run: dotnet tool install --global wix --version 5.0.2
 
@@ -80,6 +98,22 @@ jobs:
           name: Windowshulp-msi-unsigned
           path: out/Windowshulp.msi
           if-no-files-found: error
+
+      - name: Onderteken MSI (Azure Trusted Signing)
+        if: ${{ vars.SIGNING_ACCOUNT != '' }}
+        uses: azure/trusted-signing-action@v0.5.1
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ vars.SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ vars.SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.SIGNING_PROFILE }}
+          files-folder: out
+          files-folder-filter: msi
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
 
       - name: Onderteken MSI via SignPath
         if: ${{ vars.SIGNPATH_ORG_ID != '' }}
