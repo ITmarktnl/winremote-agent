@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
-namespace Windowshulp.Agent;
+namespace WinRemote.Agent;
 
 /// <summary>
 /// Het venster dat de klant ziet: huisstijl van het IT-bedrijf, de sessiecode en de status.
@@ -135,11 +135,11 @@ public sealed class MainForm : Form
 			string code;
 			if (_start.Code is not null)
 			{
-				// De klant ziet deze code al op windowshulp.nl; hier alleen aansluiten.
+				// De klant ziet deze code al op winremote.nl; hier alleen aansluiten.
 				if (!await _sig.GebruikCodeAsync(_start.Code, _cts.Token))
 				{
 					_code.Text = "· · · · · ·";
-					_status.Text = "Deze code is verlopen. Ga terug naar windowshulp.nl en klik opnieuw op Sessie starten.";
+					_status.Text = "Deze code is verlopen. Ga terug naar winremote.nl en klik opnieuw op Sessie starten.";
 					_stip.BackColor = Color.FromArgb(200, 16, 46);
 					_stip.Invalidate();
 					return;

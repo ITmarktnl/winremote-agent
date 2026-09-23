@@ -1,18 +1,18 @@
-# Windowshulp Agent
+# WinRemote Agent
 
-Open-source Windows-client voor hulp op afstand, onderdeel van [Windowshulp.nl](https://windowshulp.nl): de
-Nederlandse tool om een Windows-pc op afstand te bekijken en te bedienen. De klant installeert Windowshulp één
-keer, start daarna vanaf windowshulp.nl met één klik een sessie en geeft de zescijferige code door. De technicus
+Open-source Windows-client voor hulp op afstand, onderdeel van [WinRemote.nl](https://winremote.nl): de
+Nederlandse tool om een Windows-pc op afstand te bekijken en te bedienen. De klant installeert WinRemote één
+keer, start daarna vanaf winremote.nl met één klik een sessie en geeft de zescijferige code door. De technicus
 werkt vanuit de browser en ziet het scherm van de klant en kan muis en toetsenbord bedienen.
 
-*Open-source Windows remote-support agent for [Windowshulp.nl](https://windowshulp.nl). The customer installs
-Windowshulp once, starts a session from the website with a single click and reads a six-digit code to the
+*Open-source Windows remote-support agent for [WinRemote.nl](https://winremote.nl). The customer installs
+WinRemote once, starts a session from the website with a single click and reads a six-digit code to the
 technician, who views and controls the screen from the browser.*
 
 ## Hoe het werkt
 
-1. De klant klikt op [windowshulp.nl/hulp](https://windowshulp.nl/hulp) op **Sessie starten**. De website vraagt een
-   sessiecode aan bij `signaal.windowshulp.nl` en opent `windowshulp://join/<code>`.
+1. De klant klikt op [winremote.nl/hulp](https://winremote.nl/hulp) op **Sessie starten**. De website vraagt een
+   sessiecode aan bij `signaal.winremote.nl` en opent `winremote://join/<code>`.
 2. Windows start de geïnstalleerde agent met die code (URL-protocol, geregistreerd door de installer). De agent
    vraagt eerst bevestiging en sluit dan aan op de sessie via een WebSocket.
 3. Zodra de technicus dezelfde code invoert, maakt de agent een WebRTC-aanbod (SIPSorcery).
@@ -32,31 +32,31 @@ Vereist de [.NET 10 SDK](https://dotnet.microsoft.com/). De agent bouwt op Windo
 
 ```sh
 dotnet publish -c Release
-# → bin/Release/net10.0-windows/win-x64/publish/Windowshulp.exe
+# → bin/Release/net10.0-windows/win-x64/publish/WinRemote.exe
 ```
 
-De installer (`Windowshulp.msi`, per gebruiker, geen beheerdersrechten) wordt gebouwd met
+De installer (`WinRemote.msi`, per gebruiker, geen beheerdersrechten) wordt gebouwd met
 [WiX 5](https://wixtoolset.org/) en kan alleen op Windows gemaakt worden:
 
 ```sh
 dotnet tool install --global wix --version 5.0.2
-wix build installer/Windowshulp.wxs -arch x64 -d Publish=bin/Release/net10.0-windows/win-x64/publish -d Versie=0.2.0 -o Windowshulp.msi
+wix build installer/WinRemote.wxs -arch x64 -d Publish=bin/Release/net10.0-windows/win-x64/publish -d Versie=0.2.0 -o WinRemote.msi
 ```
 
-GitHub Actions doet dit bij elke push; zie [Actions](https://github.com/ITmarktnl/windowshulp-agent/actions).
+GitHub Actions doet dit bij elke push; zie [Actions](https://github.com/ITmarktnl/winremote-agent/actions).
 
 ## Structuur
 
 | Bestand | Rol |
 | --- | --- |
-| `Program.cs` | Start, startargumenten (`windowshulp://join/…`, `--code`) en bevestiging |
+| `Program.cs` | Start, startargumenten (`winremote://join/…`, `--code`) en bevestiging |
 | `MainForm.cs` | Venster met sessiecode en status |
 | `Signalering.cs` | HTTP + WebSocket naar de signaleringsserver |
 | `Sessie.cs` | WebRTC-verbinding, videostream en datakanalen |
 | `SchermOpname.cs` | Schermopname met muiscursor (GDI) |
 | `Invoer.cs` | Muis en toetsenbord via `SendInput` |
 | `Branding.cs` | Naam en kleur |
-| `installer/Windowshulp.wxs` | WiX-definitie van de MSI en het URL-protocol |
+| `installer/WinRemote.wxs` | WiX-definitie van de MSI en het URL-protocol |
 
 ## Privacy en veiligheid
 
@@ -68,9 +68,9 @@ GitHub Actions doet dit bij elke push; zie [Actions](https://github.com/ITmarktn
 ## Downloaden
 
 Windows-builds worden gemaakt door GitHub Actions en zijn te vinden onder
-[Releases](https://github.com/ITmarktnl/windowshulp-agent/releases) en bij elke
-[build](https://github.com/ITmarktnl/windowshulp-agent/actions). Klanten downloaden de installer via
-[windowshulp.nl/hulp](https://windowshulp.nl/hulp).
+[Releases](https://github.com/ITmarktnl/winremote-agent/releases) en bij elke
+[build](https://github.com/ITmarktnl/winremote-agent/actions). Klanten downloaden de installer via
+[winremote.nl/hulp](https://winremote.nl/hulp).
 
 Code signing van de Windows-builds wordt gratis verzorgd door de
 [SignPath Foundation](https://signpath.org/), met een certificaat van SignPath.
@@ -83,4 +83,4 @@ using a certificate by SignPath.*
 [GNU Affero General Public License v3.0](LICENSE). Aanpassingen die je verspreidt of via een netwerk aanbiedt,
 moet je onder dezelfde licentie openbaar maken.
 
-De website en de signaleringsserver van Windowshulp.nl maken geen deel uit van dit project.
+De website en de signaleringsserver van WinRemote.nl maken geen deel uit van dit project.

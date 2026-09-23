@@ -3,7 +3,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 
-namespace Windowshulp.Agent;
+namespace WinRemote.Agent;
 
 /// <summary>
 /// Maakt opnames van het primaire scherm (GDI, eenvoudig en overal werkend) inclusief muiscursor,

@@ -5,7 +5,7 @@ using SIPSorcery.Net;
 using SIPSorceryMedia.Abstractions;
 using SIPSorceryMedia.Encoders;
 
-namespace Windowshulp.Agent;
+namespace WinRemote.Agent;
 
 /// <summary>
 /// Eén supportsessie: WebRTC-verbinding met de technicus. Deze kant (de klant-pc) maakt het aanbod,

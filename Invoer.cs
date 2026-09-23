@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 
-namespace Windowshulp.Agent;
+namespace WinRemote.Agent;
 
 /// <summary>
 /// Zet invoerberichten van de technicus om in echte muis- en toetsenbordacties via SendInput.

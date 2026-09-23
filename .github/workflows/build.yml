@@ -25,7 +25,7 @@ jobs:
         id: versie
         shell: pwsh
         run: |
-          $v = ([xml](Get-Content WindowshulpAgent.csproj)).Project.PropertyGroup.Version
+          $v = ([xml](Get-Content WinRemoteAgent.csproj)).Project.PropertyGroup.Version
           "versie=$v" >> $env:GITHUB_OUTPUT
 
       - name: Restore
@@ -38,8 +38,8 @@ jobs:
         id: exe
         uses: actions/upload-artifact@v4
         with:
-          name: Windowshulp-exe-unsigned
-          path: bin/Release/net10.0-windows/win-x64/publish/Windowshulp.exe
+          name: WinRemote-exe-unsigned
+          path: bin/Release/net10.0-windows/win-x64/publish/WinRemote.exe
           if-no-files-found: error
 
       # Ondertekenen via SignPath Foundation (gratis voor open source).
@@ -50,7 +50,7 @@ jobs:
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORG_ID }}
-          project-slug: windowshulp-agent
+          project-slug: winremote-agent
           signing-policy-slug: ${{ github.ref_type == 'tag' && 'release-signing' || 'test-signing' }}
           github-artifact-id: ${{ steps.exe.outputs.artifact-id }}
           wait-for-completion: true
@@ -59,7 +59,7 @@ jobs:
       - name: Gesigneerde exe in de installer opnemen
         if: ${{ vars.SIGNPATH_ORG_ID != '' }}
         shell: pwsh
-        run: Copy-Item signed/Windowshulp.exe bin/Release/net10.0-windows/win-x64/publish/Windowshulp.exe -Force
+        run: Copy-Item signed/WinRemote.exe bin/Release/net10.0-windows/win-x64/publish/WinRemote.exe -Force
 
       # Azure Trusted Signing: actief zodra de secrets AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
       # en de variabelen SIGNING_ENDPOINT, SIGNING_ACCOUNT, SIGNING_PROFILE zijn ingesteld.
@@ -86,17 +86,17 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force out | Out-Null
-          wix build installer/Windowshulp.wxs -arch x64 `
+          wix build installer/WinRemote.wxs -arch x64 `
             -d Publish=bin/Release/net10.0-windows/win-x64/publish `
             -d Versie=${{ steps.versie.outputs.versie }} `
-            -o out/Windowshulp.msi
+            -o out/WinRemote.msi
 
       - name: Upload MSI (ongesigneerd)
         id: msi
         uses: actions/upload-artifact@v4
         with:
-          name: Windowshulp-msi-unsigned
-          path: out/Windowshulp.msi
+          name: WinRemote-msi-unsigned
+          path: out/WinRemote.msi
           if-no-files-found: error
 
       - name: Onderteken MSI (Azure Trusted Signing)
@@ -121,7 +121,7 @@ jobs:
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORG_ID }}
-          project-slug: windowshulp-agent
+          project-slug: winremote-agent
           signing-policy-slug: ${{ github.ref_type == 'tag' && 'release-signing' || 'test-signing' }}
           github-artifact-id: ${{ steps.msi.outputs.artifact-id }}
           wait-for-completion: true
@@ -131,10 +131,10 @@ jobs:
         if: ${{ vars.SIGNPATH_ORG_ID != '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: Windowshulp-signed
+          name: WinRemote-signed
           path: |
-            signed/Windowshulp.exe
-            signed-msi/Windowshulp.msi
+            signed/WinRemote.exe
+            signed-msi/WinRemote.msi
           if-no-files-found: error
 
       - name: Release publiceren
@@ -142,6 +142,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            out/Windowshulp.msi
-            bin/Release/net10.0-windows/win-x64/publish/Windowshulp.exe
+            out/WinRemote.msi
+            bin/Release/net10.0-windows/win-x64/publish/WinRemote.exe
           generate_release_notes: true

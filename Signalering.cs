@@ -4,10 +4,10 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Windowshulp.Agent;
+namespace WinRemote.Agent;
 
 /// <summary>
-/// Verbinding met signaal.windowshulp.nl: sessiecode ophalen, ICE-servers ophalen en het
+/// Verbinding met signaal.winremote.nl: sessiecode ophalen, ICE-servers ophalen en het
 /// WebSocket-kanaal waarover offer/answer/ICE met de technicus worden uitgewisseld.
 /// </summary>
 public sealed class Signalering : IAsyncDisposable

@@ -16,13 +16,13 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <AssemblyName>Windowshulp</AssemblyName>
-    <RootNamespace>Windowshulp.Agent</RootNamespace>
+    <AssemblyName>WinRemote</AssemblyName>
+    <RootNamespace>WinRemote.Agent</RootNamespace>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.2.0</Version>
-    <Company>Windowshulp.nl</Company>
-    <Product>Windowshulp</Product>
+    <Version>0.3.0</Version>
+    <Company>WinRemote.nl</Company>
+    <Product>WinRemote</Product>
   </PropertyGroup>
 
   <ItemGroup>
